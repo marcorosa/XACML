@@ -35,10 +35,10 @@ import com.att.research.xacml.std.datatypes.DataTypes;
 import com.att.research.xacml.std.datatypes.XPathExpressionWrapper;
 
 /**
- * StdIndividualDecisionRequestGenerator is a utility that PDP developers can use to take an original 
+ * StdIndividualDecisionRequestGenerator is a utility that PDP developers can use to take an original
  * {@link com.att.research.xacml.api.Request} and turn it into a sequence of individual decision <code>Request</code>s.
  * This class implements all of the multiple-decision profiles specified in "XACML v3.0 Multiple Decision Profile Version 1.0"
- * 
+ *
  * @author car
  * @version $Revision$
  */
@@ -48,12 +48,12 @@ public class StdIndividualDecisionRequestGenerator {
 	private static final Status STATUS_NO_XMLID			= new StdStatus(StdStatusCode.STATUS_CODE_SYNTAX_ERROR, "No xml:id");
 	private static final Status STATUS_NO_CATEGORY		= new StdStatus(StdStatusCode.STATUS_CODE_SYNTAX_ERROR, "No category");
 	private static final Status STATUS_NO_RESOURCE_ID	= new StdStatus(StdStatusCode.STATUS_CODE_SYNTAX_ERROR, "No " + XACML3.ID_RESOURCE_RESOURCE_ID.stringValue() + " attributes");
-	
+
 	private static final Logger logger									= LoggerFactory.getLogger(StdIndividualDecisionRequestGenerator.class);
 	private Request originalRequest;
 	private List<Request> individualDecisionRequests	= new ArrayList<Request>();
 	private ScopeResolver scopeResolver;
-	
+
 	private static StdMutableRequestAttributes removeMultipleContentSelector(RequestAttributes requestAttributes) {
 		StdMutableRequestAttributes stdRequestAttributes	= new StdMutableRequestAttributes();
 		stdRequestAttributes.setCategory(requestAttributes.getCategory());
@@ -66,11 +66,11 @@ public class StdIndividualDecisionRequestGenerator {
 		}
 		return stdRequestAttributes;
 	}
-	
+
 	/**
 	 * Does a depth-first recursion on the <code>RequestAttribute</code>s that have a multiple:content-selector and generates all
 	 * possible combinations of these attributes with the <code>ReqeustAttribute</code>s wthout a multiple:content-selector attribute.
-	 * 
+	 *
 	 * @param listRequestAttributes the <code>List</code> of <code>RequestAttribute</code>s for the new <code>Request</code>s
 	 * @param listPos the position within the <code>List</code>
 	 * @param requestInProgress the <code>StdMutableRequest</code> with all of the processed <code>RequestAttribute</code>s so far
@@ -90,7 +90,7 @@ public class StdIndividualDecisionRequestGenerator {
 					this.individualDecisionRequests.add(new StdMutableRequest(new StdStatus(StdStatusCode.STATUS_CODE_SYNTAX_ERROR, "multiple " + XACML3.ID_MULTIPLE_CONTENT_SELECTOR.stringValue() + " in category " + requestAttributes.getCategory().stringValue())));
 					return;
 				}
-				
+
 				/*
 				 * Get all of the XPathExpression values for this attribute, evaluate them against the Content node
 				 */
@@ -99,7 +99,7 @@ public class StdIndividualDecisionRequestGenerator {
 					this.individualDecisionRequests.add(new StdMutableRequest(new StdStatus(StdStatusCode.STATUS_CODE_SYNTAX_ERROR, "no XPathExpression values in " + XACML3.ID_MULTIPLE_CONTENT_SELECTOR.stringValue() + " in category " + requestAttributes.getCategory().stringValue())));
 					return;
 				}
-				
+
 				/*
 				 * Get the single XPathExpression and return an error if there is more than one.  This may not be strictly necessary.  We could
 				 * explode all of the XPathExpressions, but for now assume only one is allowed.
@@ -114,7 +114,7 @@ public class StdIndividualDecisionRequestGenerator {
 					this.individualDecisionRequests.add(new StdMutableRequest(new StdStatus(StdStatusCode.STATUS_CODE_SYNTAX_ERROR, "null XPathExpression")));
 					return;
 				}
-				
+
 				/*
 				 * Get the NodeList so we know how many results will be returned
 				 */
@@ -123,7 +123,7 @@ public class StdIndividualDecisionRequestGenerator {
 					this.individualDecisionRequests.add(new StdMutableRequest(new StdStatus(StdStatusCode.STATUS_CODE_SYNTAX_ERROR, "no matching nodes in the Content for XPathExpression " + xpathExpression.toString() + " in category " + requestAttributes.getCategory().stringValue())));
 					return;
 				}
-				
+
 				/*
 				 * For each matching node, create a new XPathExpression with an array accessor
 				 */
@@ -131,15 +131,15 @@ public class StdIndividualDecisionRequestGenerator {
 					try {
 						StdMutableRequestAttributes requestAttributesSingleContentSelector	= removeMultipleContentSelector(requestAttributes);
 						XPathExpressionWrapper xpathExpressionWrapperSingle					= new XPathExpressionWrapper(xpathExpression.getNamespaceContext(), xpathExpression.getPath() + "[" + (i+1) + "]");
-						Attribute attributeContentSelector									= new StdMutableAttribute(attributeMultipleContentSelector.getCategory(), 
-																									   		   XACML3.ID_CONTENT_SELECTOR, 
-																									   		   DataTypes.DT_XPATHEXPRESSION.createAttributeValue(xpathExpressionWrapperSingle), 
-																									   		   attributeMultipleContentSelector.getIssuer(), 
-																									   		   attributeMultipleContentSelector.getIncludeInResults());	
+						Attribute attributeContentSelector									= new StdMutableAttribute(attributeMultipleContentSelector.getCategory(),
+																									   		   XACML3.ID_CONTENT_SELECTOR,
+																									   		   DataTypes.DT_XPATHEXPRESSION.createAttributeValue(xpathExpressionWrapperSingle),
+																									   		   attributeMultipleContentSelector.getIssuer(),
+																									   		   attributeMultipleContentSelector.getIncludeInResults());
 						requestAttributesSingleContentSelector.add(attributeContentSelector);
 						StdMutableRequest stdRequestSingleContentSelector					= new StdMutableRequest(requestInProgress);
 						stdRequestSingleContentSelector.add(requestAttributesSingleContentSelector);
-						
+
 						/*
 						 * Recurse to get the remaining attribute categories
 						 */
@@ -149,7 +149,7 @@ public class StdIndividualDecisionRequestGenerator {
 						return;
 					}
 				}
-				
+
 				/*
 				 * Once we have exploded values at this point in the list, we just return as the list will have been
 				 * completely processed in the recursion
@@ -159,17 +159,17 @@ public class StdIndividualDecisionRequestGenerator {
 				requestInProgress.add(requestAttributes);
 			}
 		}
-		
+
 		/*
 		 * If we get here, then the request in progress is complete and should be added to the set
 		 */
 		this.individualDecisionRequests.add(requestInProgress);
 	}
-	
+
 	/**
 	 * Checks to see if there are any categories that include an attribute with a "multiple:content-selector" identifier.  If so,
 	 * the multiple content selectors are resolved to individual content-selectors.
-	 * 
+	 *
 	 * @param request
 	 */
 	protected void processContentSelectors(Request request) {
@@ -178,7 +178,7 @@ public class StdIndividualDecisionRequestGenerator {
 			this.individualDecisionRequests.add(request);
 			return;
 		}
-		
+
 		/*
 		 * Quick check for any categories with a multiple:content-selector attribute
 		 */
@@ -186,7 +186,7 @@ public class StdIndividualDecisionRequestGenerator {
 		while (!hasMultipleContentSelectors && iterRequestAttributes.hasNext()) {
 			hasMultipleContentSelectors	= iterRequestAttributes.next().hasAttributes(XACML3.ID_MULTIPLE_CONTENT_SELECTOR);
 		}
-		
+
 		/*
 		 * Iterate over all of the categories and see if there are any attributes in them with a multiple:content-selector
 		 */
@@ -195,20 +195,20 @@ public class StdIndividualDecisionRequestGenerator {
 		} else {
 			List<RequestAttributes> listRequestAttributes	= new ArrayList<RequestAttributes>();
 			listRequestAttributes.addAll(request.getRequestAttributes());
-			
+
 			StdMutableRequest stdRequestInProgress	= new StdMutableRequest();
 			stdRequestInProgress.setRequestDefaults(request.getRequestDefaults());
 			stdRequestInProgress.setReturnPolicyIdList(request.getReturnPolicyIdList());
 			this.explodeOnContentSelector(listRequestAttributes, 0, stdRequestInProgress);
 		}
 	}
-	
+
 	private static StdMutableRequest removeResources(Request request) {
 		StdMutableRequest stdRequest	= new StdMutableRequest(request.getStatus());
 		stdRequest.setCombinedDecision(request.getCombinedDecision());
 		stdRequest.setRequestDefaults(request.getRequestDefaults());
 		stdRequest.setReturnPolicyIdList(request.getReturnPolicyIdList());
-	
+
 		Iterator<RequestAttributes> iterRequestAttributes	= request.getRequestAttributes().iterator();
 		if (iterRequestAttributes != null) {
 			while (iterRequestAttributes.hasNext()) {
@@ -220,11 +220,11 @@ public class StdIndividualDecisionRequestGenerator {
 		}
 		return stdRequest;
 	}
-	
+
 	/**
 	 * Creates a duplicate of the given <code>RequestAttributes</code> with any resource-id and scope
 	 * attributes removed.
-	 * 
+	 *
 	 * @param requestAttributes the original <code>RequestAttributes</code>.
 	 * @return
 	 */
@@ -233,7 +233,7 @@ public class StdIndividualDecisionRequestGenerator {
 		stdRequestAttributes.setCategory(requestAttributes.getCategory());
 		stdRequestAttributes.setContentRoot(requestAttributes.getContentRoot());
 		stdRequestAttributes.setXmlId(requestAttributes.getXmlId());
-		
+
 		for (Attribute attribute: requestAttributes.getAttributes()) {
 			Identifier identifierAttribute	= attribute.getAttributeId();
 			if (!identifierAttribute.equals(XACML3.ID_RESOURCE_RESOURCE_ID) && !identifierAttribute.equals(XACML3.ID_RESOURCE_SCOPE)) {
@@ -242,10 +242,10 @@ public class StdIndividualDecisionRequestGenerator {
 		}
 		return stdRequestAttributes;
 	}
-	
+
 	/**
 	 * Gets the <code>ScopeQualifier</code> specified in the given <code>RequestAttributes</code>.
-	 * 
+	 *
 	 * @param requestAttributes
 	 * @return
 	 * @throws ScopeResolverException
@@ -255,15 +255,15 @@ public class StdIndividualDecisionRequestGenerator {
 		if (iterAttributesScope == null || !iterAttributesScope.hasNext()) {
 			return null;
 		}
-		
+
 		Attribute attributeScope	= iterAttributesScope.next();
 		if (iterAttributesScope.hasNext()) {
 			throw new ScopeResolverException("More than one " + XACML3.ID_RESOURCE_SCOPE.stringValue() + " attribute");
 		}
-		
+
 		Iterator<AttributeValue<?>> iterAttributeValuesScope	= attributeScope.getValues().iterator();
 		if (!iterAttributeValuesScope.hasNext()) {
-			throw new ScopeResolverException("No values for " + XACML3.ID_RESOURCE_SCOPE.stringValue() + " atribute");
+			throw new ScopeResolverException("No values for " + XACML3.ID_RESOURCE_SCOPE.stringValue() + " attribute");
 		}
 		ScopeQualifier scopeQualifier	= null;
 		while (scopeQualifier == null && iterAttributeValuesScope.hasNext()) {
@@ -275,7 +275,7 @@ public class StdIndividualDecisionRequestGenerator {
 					scopeQualifier	= ScopeQualifier.getScopeQualifier(attributeValueScopeString.getValue());
 				}
 			} catch (Exception ex) {
-				
+
 			}
 		}
 		if (scopeQualifier == null) {
@@ -283,16 +283,16 @@ public class StdIndividualDecisionRequestGenerator {
 		}
 		return scopeQualifier;
 	}
-	
+
 	/**
 	 * Checks to see if there are any categories that include an attribute with a "scope" identifier.  If so, the scopes are expanded
 	 * and individual decision requests are generated with the expanded scopes.
-	 * 
+	 *
 	 * @param request
 	 */
 	protected void processScopes(Request request) {
 		assert(request.getStatus() == null || request.getStatus().isOk());
-		
+
 		/*
 		 * If there is no scope resolver, then just move on to the content selectors
 		 */
@@ -300,7 +300,7 @@ public class StdIndividualDecisionRequestGenerator {
 			this.processContentSelectors(request);
 			return;
 		}
-		
+
 		/*
 		 * Scope only applies to the resource category, so just get the RequestAttributes for that.  At this point there should be at most one.
 		 */
@@ -311,7 +311,7 @@ public class StdIndividualDecisionRequestGenerator {
 		}
 		RequestAttributes requestAttributesResource	= iterRequestAttributesResource.next();
 		assert(!iterRequestAttributesResource.hasNext());
-		
+
 		/*
 		 * Get the requested scope
 		 */
@@ -326,7 +326,7 @@ public class StdIndividualDecisionRequestGenerator {
 			this.processContentSelectors(request);
 			return;
 		}
-		
+
 		/*
 		 * Get the resource-id attributes and iterate over them, generating individual resource id values using the scope
 		 * resolver.
@@ -336,17 +336,17 @@ public class StdIndividualDecisionRequestGenerator {
 			this.individualDecisionRequests.add(new StdMutableRequest(STATUS_NO_RESOURCE_ID));
 			return;
 		}
-		
+
 		/*
 		 * Make a copy of the request attributes with the scope and resource ID values removed.
 		 */
 		StdMutableRequestAttributes requestAttributesBase	= removeScopeAttributes(requestAttributesResource);
-		
+
 		/*
 		 * Set up the basic Request to match the input request but with no resource attributes
 		 */
 		StdMutableRequest stdRequest	= removeResources(request);
-		
+
 		boolean bAtLeastOne	= false;
 		while (iterAttributesResourceId.hasNext()) {
 			Attribute attributeResourceId	= iterAttributesResourceId.next();
@@ -383,12 +383,12 @@ public class StdIndividualDecisionRequestGenerator {
 			this.processContentSelectors(stdRequest);
 		}
 	}
-	
+
 	/**
 	 * Checks to see if the category with the <code>Identifier</code> at the current <code>Iterator</code> position has
 	 * multiple <code>RequestAttribute</code>s associated with it.  If so, then for each copy, explode on the remaining categories.  Otherwise
 	 * store the single value in the requestInProgress and explode on the remaining values.
-	 * 
+	 *
 	 * @param identifiers
 	 * @param pos
 	 * @param requestInProgress
@@ -415,10 +415,10 @@ public class StdIndividualDecisionRequestGenerator {
 			}
 		}
 	}
-	
+
 	/**
 	 * Checks to see if the given <code>Request</code> contains instances of repeated categories in the request attributes elements.
-	 * 
+	 *
 	 * @param request the <code>Request</code> to check
 	 */
 	protected void processRepeatedCategories(Request request) {
@@ -430,7 +430,7 @@ public class StdIndividualDecisionRequestGenerator {
 			this.individualDecisionRequests.add(request);
 			return;
 		}
-		
+
 		/*
 		 * We need to do a quick check for multiple Attributes with the same Category
 		 */
@@ -449,7 +449,7 @@ public class StdIndividualDecisionRequestGenerator {
 				setCategories.add(identifierCategory);
 			}
 		}
-		
+
 		/*
 		 * If there are no instances of categories with multiple Attributes elements, then no splitting is done here,
 		 * just move on to the next check.
@@ -469,18 +469,18 @@ public class StdIndividualDecisionRequestGenerator {
 				}
 				listRequestAttributes.add(requestAttributes);
 			}
-			
+
 			StdMutableRequest requestRoot	= new StdMutableRequest();
 			requestRoot.setRequestDefaults(request.getRequestDefaults());
 			requestRoot.setReturnPolicyIdList(request.getReturnPolicyIdList());
 			this.explodeOnCategory(mapCategories.keySet().toArray(idArray), 0, requestRoot, mapCategories);
 		}
 	}
-	
+
 	/**
 	 * Tries to resolve the given <code>RequestReference</code> in order to create a fully
 	 * qualified <code>Request</code> to pass on to the next stage of individual request processing.
-	 * 
+	 *
 	 * @param requestReference
 	 */
 	protected Request processMultiRequest(Request requestOriginal, RequestReference requestReference) {
@@ -488,7 +488,7 @@ public class StdIndividualDecisionRequestGenerator {
 		if (listRequestAttributesReferences.size() == 0) {
 			return new StdMutableRequest(STATUS_NO_ATTRIBUTES);
 		}
-		
+
 		StdMutableRequest stdRequest	= new StdMutableRequest(requestOriginal.getStatus());
 		stdRequest.setRequestDefaults(requestOriginal.getRequestDefaults());
 		stdRequest.setReturnPolicyIdList(requestOriginal.getReturnPolicyIdList());
@@ -506,11 +506,11 @@ public class StdIndividualDecisionRequestGenerator {
 		}
 		return stdRequest;
 	}
-	
+
 	/**
 	 * Populates the individual decision <code>Request</code>s from the given <code>Request</code>
 	 * using all supported profiles.  The process here is documented as step 1. of Section 4 of the XACML document.
-	 * 
+	 *
 	 * @param request the <code>Request</code> to explode
 	 */
 	protected void createIndividualDecisionRequests(Request request) {
@@ -521,7 +521,7 @@ public class StdIndividualDecisionRequestGenerator {
 			this.individualDecisionRequests.add(request);
 			return;
 		}
-		
+
 		/*
 		 * Check to see if this Request is a MultiRequest
 		 */
@@ -544,30 +544,30 @@ public class StdIndividualDecisionRequestGenerator {
 			this.processRepeatedCategories(request);
 		}
 	}
-	
+
 	public StdIndividualDecisionRequestGenerator(ScopeResolver scopeResolverIn, Request request) {
 		this.originalRequest	= request;
 		this.scopeResolver		= scopeResolverIn;
 		this.createIndividualDecisionRequests(request);
 	}
-	
+
 	public StdIndividualDecisionRequestGenerator(Request request) {
 		this(null, request);
 	}
 
 	/**
 	 * Gets the original <code>Request</code>.
-	 * 
+	 *
 	 * @return the original <code>Request</code>
 	 */
 	public Request getOriginalRequest() {
 		return this.originalRequest;
 	}
-	
+
 	/**
 	 * Gets an <code>Iterator</code> over the individual decision <code>Request</code>s for
 	 * the original <code>Request</code>.
-	 * 
+	 *
 	 * @return an <code>Iterator</code> over the individual decision <code>Request</code>s.
 	 */
 	public Iterator<Request> getIndividualDecisionRequests() {
